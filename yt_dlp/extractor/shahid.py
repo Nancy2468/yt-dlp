@@ -2,7 +2,6 @@ import json
 import math
 import re
 
-from .aws import AWSIE
 from ..networking.exceptions import HTTPError
 from ..utils import (
     ExtractorError,
@@ -15,11 +14,8 @@ from ..utils import (
 )
 
 
-class ShahidBaseIE(AWSIE):
-    _AWS_PROXY_HOST = 'api2.shahid.net'
-    _AWS_API_KEY = '2RRtuMHx95aNI1Kvtn2rChEuwsCogUd4samGPjLh'
-    _VALID_URL_BASE = r'https?://shahid\.mbc\.net/[a-z]{2}/'
-
+class ShahidBaseIE:
+    
     def _handle_error(self, e):
         fail_data = self._parse_json(
             e.cause.response.read().decode('utf-8'), None, fatal=False)
@@ -29,20 +25,7 @@ class ShahidBaseIE(AWSIE):
             if faults_message:
                 raise ExtractorError(faults_message, expected=True)
 
-    def _call_api(self, path, video_id, request=None):
-        query = {}
-        if request:
-            query['request'] = json.dumps(request)
-        try:
-            return self._aws_execute_api({
-                'uri': '/proxy/v2/' + path,
-                'access_key': 'AKIAI6X4TYCIXM2B7MUQ',
-                'secret_key': '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',
-            }, video_id, query)
-        except ExtractorError as e:
-            if isinstance(e.cause, HTTPError):
-                self._handle_error(e)
-            raise
+    
 
 
 class ShahidIE(ShahidBaseIE):
@@ -114,10 +97,9 @@ class ShahidIE(ShahidBaseIE):
         if not self.get_param('allow_unplayable_formats') and playout.get('drm'):
             self.report_drm(video_id)
 
-        formats = self._extract_m3u8_formats(re.sub(
-            # https://docs.aws.amazon.com/mediapackage/latest/ug/manifest-filtering.html
-            r'aws\.manifestfilter=[\w:;,-]+&?',
-            '', playout['url']), video_id, 'mp4')
+        formats = self._extract_m3u8_formats(playout['url']), video_id, 'mp4')
+            
+            
 
         # video = self._call_api(
         #     'product/id', video_id, {
